@@ -1,0 +1,34 @@
+---
+title: "test-lookup-fncs"
+date: "6/29/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(foreach)
+library(tictoc)
+library(readxl)
+source(file.path("./utils.R"))
+```
+
+```{r, test-loadTables}
+path <- list("alph" = "path/to/ALPHA.csv", "rpt" = "path/to/RPT.CSV", "info" = "path/to/INFO.csv")
+
+tables <- loadTables(paths=path)
+View(tables[[1]])
+```
+
+```{r, test-getUserinput}
+tic("test getUserinput")
+index_alph<-getUser_input(path=file.path("path/to/user/input.xlsx"), table = alphTable)
+toc()
+
+index_alph[1:10]
+```
+
+```{r, test-createLookup}
+tic("test generating lookup tables")
+lookup_tables <- createLookup(index_num=NULL, numTable=NULL, index_alph, alphTable=tables$alphaNumeric_table, rptTable=tables$report_table, infoTable=tables$info_table)
+toc()
+```
