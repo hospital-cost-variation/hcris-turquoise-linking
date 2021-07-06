@@ -11,7 +11,8 @@ loadTables <- function(paths){
   # Returns
   # -------
   # tables : list
-  #   Where each list element corresponds to inputted file path saved as data frame.
+  #   Where each list element corresponds to inputted file path saved as data frame and 
+  #   list names are "report_table", "alphaNumeric_table", and "info_table"
   
   rpt_df <- data.frame()
   num_df <- data.frame()
@@ -227,8 +228,9 @@ createLookup <- function(index_num, numTable, index_alph, alphTable, rptTable,
   # Returns
   # ------
   # tables : list
-  #   primary table, first linking table, second linking table
-  # 
+  #   primary table, first linking table, second linking table saved under list names
+  #   "primary table", "report linking table", and "hospital information linking table"
+  #
   
   # Generate primary table
   prim_table <- data.frame()
