@@ -20,6 +20,8 @@ View(tables[[1]])
 ```
 
 ```{r, test-getUserinput}
+alphTable = tables$alphaNumeric_table
+
 tic("test getUserinput")
 index_alph<-getUser_input(path=file.path("path/to/user/input.xlsx"), table = alphTable)
 toc()
@@ -31,4 +33,6 @@ index_alph[1:10]
 tic("test generating lookup tables")
 lookup_tables <- createLookup(index_num=NULL, numTable=NULL, index_alph, alphTable=tables$alphaNumeric_table, rptTable=tables$report_table, infoTable=tables$info_table)
 toc()
+
+View(lookup_tables)
 ```
