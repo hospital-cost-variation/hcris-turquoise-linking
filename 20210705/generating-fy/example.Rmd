@@ -6,13 +6,12 @@ output: html_document
 
 ```{r, setup, include=FALSE}
 library(tidyverse)
+source(file.path("./utils.R"))
 
-source(file.path("~/20210705/generating-lookup/utils.R"))
 tables <- loadTable(tableType = "info", path = file.path("/path/to/INFO.CSV"))
 ```
 
 ```{r, test-fyWeights-fnc}
-source(file.path("./utils.R"))
 infoWeights <- fy_weight(infoTable)
 
 View(infoWeights)
