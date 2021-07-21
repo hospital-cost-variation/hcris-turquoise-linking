@@ -6,6 +6,7 @@ output: html_document
 
 ```{r, setup, include=FALSE}
 library(tidyverse)
+library(foreach)
 source(file.path("./utils.R"))
 
 paths = list()
