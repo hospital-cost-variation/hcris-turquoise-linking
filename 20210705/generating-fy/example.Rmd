@@ -8,7 +8,7 @@ output: html_document
 library(tidyverse)
 source(file.path("./utils.R"))
 
-tables <- loadTable(tableType = "info", path = file.path("/path/to/INFO.CSV"))
+tables <- loadTables(tableType = "info", path = file.path("/path/to/INFO.CSV"))
 ```
 
 ```{r, test-fyWeights-fnc}
