@@ -264,7 +264,6 @@ createLookup <- function(index_num, numTable, index_alph, alphTable, rptTable,
       prim_table <- rbind(prim_table, table_alph)
       
     }
-  }
   
   
   # Generate first linking table using RPT_REC_NUM
