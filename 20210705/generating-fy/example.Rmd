@@ -11,7 +11,7 @@ source(file.path("./utils.R"))
 
 paths = list()
 paths$info = "/path/to/INFO.CSV"
-tables <- loadTables(paths = paths)
+infoTable <- loadTables(paths = paths)[[1]]
 ```
 
 ```{r, test-fyWeights-fnc}
