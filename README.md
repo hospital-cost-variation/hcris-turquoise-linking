@@ -1,4 +1,8 @@
 # hcris-file-rendering  
+## 20210825
+Contains demos shared during meeting on 8/30/21 and some helpful supplementary files.
+
+
 ## 20210705
 ### generating-lookup folder
 Contains:  
