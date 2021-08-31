@@ -1,0 +1,180 @@
+---
+title: "Demo shared during meeting on 8/30 for Mac"
+output:
+  html_document:
+    df_print: paged
+---
+
+### Overview   
+This notebook will walk you through automatically filtering in-memory copies of HCRIS datasets based on already-filtered, in-memory copies of the TURQUOISE datasets. These in-memory copies may then be downloaded locally or you can continue to perform analysis on the in-memory copies.  
+
+### Application to desired workflow  
+Using practices similar to the ones in this walk-through we will be able to:  
+1. perform queries on TURQUOISE database and save query results locally  
+2. automatically update local copies of HCRIS tables based on our TURQUOISE database query results; and finally  
+3. perform further analysis on local copies of the TURQUOISE and HCRIS datasets
+
+```{r, setup}
+# load tictoc package
+library(tictoc)
+
+# load libraries and functions from utils.R file
+path_to_Rutils <- './utils/utils.R'
+source(file.path(path_to_Rutils))
+
+# load functions from pyutils.py file
+path_to_pyutils <- './utils/pyutils.py'
+```
+
+
+### Setup paths to sources of functions
+_NOTE_: You will need the python libraries beautifulsoup4, re, io, zipfile, numpy, and pandas. If you get an error that they are not already installed type `pip3 install <package name>` i.e. `pip install numpy` in terminal
+
+```{r message=FALSE, warning=FALSE}
+path_to_python <- rstudioapi::showPrompt(title="path to python on local machine", 
+                                         message="Enter your machine's path to python below. This may be along the lines of '/usr/local/...'")
+
+tic("configure reticulate for python-R integration")
+configure_reticulate(path=path_to_python, virtualenv = "r-reticulate")
+reticulate::source_python(file.path(path_to_pyutils))
+toc()
+
+rstudioapi::showDialog(title="Finished setting sources", message="Finished setting sources to custom functions. Run the next code chunk.")
+```
+
+
+### Load raw, unfiltered HCRIS cost reports directly from CMS.gov into R session
+```{r, load-hcris-dataframes}
+# load HCRIS alpha, nmrc, and rpt tables from the year 2020 as dataframes
+selectedYear <- rstudioapi::showPrompt(title="Which year", message="Which year would you like to download HCRIS cost reports from? Valid years are 1995-2020")
+
+tic(paste("get cost report tables from", selectedYear))
+selectedYear_reports=getCostReport(selectedYear)
+toc()
+
+alpha_df <- selectedYear_reports[[1]]
+nmrc_df <- selectedYear_reports[[2]]
+rpt_df <- selectedYear_reports[[3]]
+
+# load HCRIS provider id info tables from the selected as a dataframe
+form <- ""
+if(as.integer(selectedYear) < 2010) {
+  form <- '96'
+} else {
+  form <-'10'
+}
+
+tic("get provider info table")
+info_df <- getHospInfo(form)
+toc()
+
+print("First few rows of the alpha, nmrc, rpt, and info HCRIS tables for the year 2020")
+head(alpha_df)
+head(nmrc_df)
+head(rpt_df)
+head(info_df)
+
+rstudioapi::showDialog(title="Finished getting HCRIS", message=paste0("Finished getting HCRIS data tables for the year ", selectedYear,". The alphanumeric, 'numeric', 'report', and 'hospital provider id' tables are stored as dataframes in the variables 'alpha_df', 'nmrc_df', 'rpt_df', and 'info_df'. Run the next code chunk."))
+
+```
+
+
+### Load raw, unfiltered HCRIS cost reports (saved to memory in previous code block) into SQLite relational database
+```{r, create-hcris-database}
+hcris_twenty_tables <- list("alph_df" = alpha_df,
+                            "nmrc_df" = nmrc_df,
+                            "rpt_df" = rpt_df,
+                            "info_df" = info_df)
+
+# connect to an in-memory database
+hcris_mem_con <- dbConnect(RSQLite::SQLite(), ":memory:")
+
+tic("HCRIS database assembled")
+createDB(hcris_tables=hcris_twenty_tables, connection = hcris_mem_con)
+toc()
+
+# confirm tables were written to database
+dbListTables(hcris_mem_con)
+
+rstudioapi::showDialog(title="Finished creating DB", message=paste0("Finished loading HCRIS data tables for the year ", selectedYear," into database in memory. Run the next code chunk."))
+```
+
+
+# Load appendectomy rawcharge file directly from TURQUOISE database
+```{r, load-append}
+# open connection to database and ask for credentials
+con <- dbConnect(RPostgres::Postgres(),
+                  dbname = 'da90rd9a0abng1', 
+                  host = 'ec2-54-208-159-67.compute-1.amazonaws.com', 
+                  port = 5432, 
+                  user = rstudioapi::askForPassword("username"),
+                  password = rstudioapi::askForPassword("password"))
+
+# query rawcharge data corresponding to appendectomy
+res <- dbSendQuery(con, 
+                   "SELECT * FROM price_transparency_rawcharge WHERE cpt = '44970' or cpt
+                   = '33979' or cpt = '44950' or cpt = '44955' or cpt = '44960' or msdrg 
+                   = '338' or msdrg = '339' or msdrg = '340' or msdrg = '341' or msdrg = 
+                   '342' or msdrg = '343';")
+      
+appendec_raw <- data.frame()
+  while(!dbHasCompleted(res)){
+    chunk <- dbFetch(res, n = 50000)
+    appendec_raw <- rbind(appendec_raw, chunk)
+  }
+
+dbClearResult(res)
+dbDisconnect(con)
+
+# set column names
+colnames(appendec_raw) <- c("id", "msdrg", "cpt", "rev_code", "rate_currency", "rate", "created", "last_updated", "plan_id", "provider_id", "charge_description_id", "apc", "ndc", "service_area", "billing_entity", "mod")
+
+head(appendec_raw)
+
+rstudioapi::showDialog(title="Finished loading appendectomy data", message="Finished loading appendectomy rawcharge data from TURQUOISE database. Run the next code chunk.")
+```
+
+
+### Automatically filter raw, unfiltered HCRIS cost report tables from the selected year based on how TURQUOISE rawcharge table is filtered (in this case it is filtered to only return rows relating to appendectomy)
+```{r, filter-hcris}
+tic("HCRIS tables automatically filtered and copy has been saved")
+filtered_hcris <- turqToHcris(turquoise_rawcharge=appendec_raw, test=FALSE, hcris_con=hcris_mem_con)
+toc()
+
+print("Glimpse filtered HCRIS tables")
+head(filtered_hcris)
+
+rstudioapi::showDialog(title="Finished linking HCRIS to TURQUOISE", message="Finished linking HCRIS data to filtered TURQUOISE rawcharge data. Run the next code chunk.")
+```
+
+
+### Calculate fiscal year weights and append to info HCRIS table
+```{r, load-fyWeights}
+# set class of Fiscal year columns to Date
+filtered_info_df <- filtered_hcris$filtered_info_df
+
+filtered_info_df$FYB <- as.Date(filtered_info_df$FYB, format="%d-%b-%y")
+filtered_info_df$FYE <- as.Date(filtered_info_df$FYE, format="%d-%b-%y")
+
+# generate columns with fiscal year weights and append to dataframe
+filtered_info_df <- fy_weight(filtered_info_df)
+head(filtered_info_df)
+
+if(any(colnames(filtered_info_df) == "fraction_fy1") & any(colnames(filtered_info_df) == "fraction_fy2")){
+print("Fiscal year weights successfully calculated")
+}
+
+rstudioapi::showDialog(title="Conclusion", message="Finished appending fiscal year weight columns to hospital provider id dataframe")
+```
+
+
+### Conclusion/Results
+Run the following code chunk to open all target HCRIS and TURQUOISE dataframes in new tabs!
+```{r, conclu}
+View(filtered_alph_df, "HCRIS alpha-numeric table")
+View(filtered_nmrc_df, "HCRIS numeric table")
+View(filtered_info_df, "HCRIS info table")
+View(filtered_hcris$filtered_rpt_df, "HCRIS rpt table")
+
+View(appendec_df, "TURQUOISE rawcharge file filtered on appendectomy codes")
+```
