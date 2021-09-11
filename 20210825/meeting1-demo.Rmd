@@ -148,6 +148,30 @@ rstudioapi::showDialog(title="Finished linking HCRIS to TURQUOISE", message="Fin
 ```
 
 
+### Label HCRIS alphanumeric and numeric fields
+_NOTE:_ MAKE SURE THE `hcris-labels.xlsx` FILE IN THE suppl-files directory IS UNZIPPED
+```{r, label-hcris}
+path_ <- './suppl-files/hcris-labels.xlsx'
+
+tic("label alpha")
+filtered_alph_df<-labelHcris(table=filtered_hcris$filtered_alph_df, form = form, table_type='alpha',path_=path_)
+toc()
+
+tic("label nmrc")
+filtered_nmrc_df<-labelHcris(table=filtered_hcris$filtered_nmrc_df, form = form, table_type='nmrc',path_=path_)
+toc()
+
+print("Glimpse labels for HCRIS tables if any") 
+filtered_alph_df %>%
+  filter(!is.na(`FIELD_DESCRIPTION`))
+
+filtered_nmrc_df %>%
+  filter(!is.na(`FIELD_DESCRIPTION`))
+
+rstudioapi::showDialog(title="Finished labeling HCRIS", message="Finished labeling HCRIS numeric and alphanumeric worksheet field in respective dataframes. Run the next code chunk.")
+```
+
+
 ### Calculate fiscal year weights and append to info HCRIS table
 ```{r, load-fyWeights}
 # set class of Fiscal year columns to Date
@@ -178,3 +202,9 @@ View(filtered_hcris$filtered_rpt_df, "HCRIS rpt table")
 
 View(appendec_df, "TURQUOISE rawcharge file filtered on appendectomy codes")
 ```
+
+
+
+
+
+
