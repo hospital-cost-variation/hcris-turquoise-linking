@@ -440,7 +440,7 @@ turqToHcris <- function(turquoise_rawcharge = NULL, test=TRUE, hcris_con){
 
 
 # FUNCTION TO LABEL HCRIS TABLE ROWS
-labelHcris <- function(path_, form='10', table_type, table) {
+labelHcris <- function(path_, form, table_type, table) {
   # Cycles through excel spreadsheet which
   # contains labels for HCRIS data table worksheet
   # codes
@@ -483,12 +483,14 @@ labelHcris <- function(path_, form='10', table_type, table) {
       filter(sprdsht[,1]=='NUMERIC')
   }
   
-  colnames(labels) <- c('DATA_TYPE',	'96_FIELD_NAME',	'10_FIELD_NAME',	'FIELD DESCRIPTION', 	'WKSHT_CD',	'LINE_NUM',	'CLMN_NUM')
+  #return(labels)
+  colnames(labels) <- c('DATA_TYPE',	'96_FIELD_NAME',	'10_FIELD_NAME',	'FIELD_DESCRIPTION', 	'WKSHT_CD',	'LINE_NUM',	'CLMN_NUM')
   
   #depending on whether 96 or 10 form is being referenced
   # only select the rows where the value under 96_FIELD_NAME or 10_FIELD_NAME column
   # value is not missing or not "not in form"
   keep_index<-vector()
+  
   if(form=='96'){
     keep_index <-grep('.*_.*', labels$`96_FIELD_NAME`)
     labels<-labels[keep_index, -3]
@@ -497,8 +499,16 @@ labelHcris <- function(path_, form='10', table_type, table) {
     labels<-labels[keep_index, -2]
   }
   
+  #return(str(labels))
+  #return(labels)
+  
   # join the filtered spreadsheet and the hcris table  
-  return(left_join(table, labels[,3:6]))
+  labeled_table <- left_join(table, labels[,3:6])
+  
+  # Reformatting of labels
+  labeled_table$`FIELD_DESCRIPTION` <- gsub(pattern = ".*\r\n", replacement = " ", x = labeled_table$`FIELD_DESCRIPTION`)
+  
+  return(labeled_table)
   
   #--------------------------- Test code on one table --------------------------------#
   # select from the spreadsheet only the labels for the table specified
@@ -507,7 +517,7 @@ labelHcris <- function(path_, form='10', table_type, table) {
   #   alpha_labels <- sprdsht %>%
   #     filter(sprdsht[,1]=='ALPHANUMERIC')
   # }
-  # colnames(alpha_labels) <- c('DATA_TYPE',	'96_FIELD_NAME',	'10_FIELD_NAME',	'FIELD DESCRIPTION', 	'WKSHT_CD',	'LINE_NUM',	'CLMN_NUM')
+  # colnames(alpha_labels) <- c('DATA_TYPE',	'96_FIELD_NAME',	'10_FIELD_NAME',	'FIELD_DESCRIPTION', 	'WKSHT_CD',	'LINE_NUM',	'CLMN_NUM')
   # #return(alpha_labels)
   # 
   # # depending on whether 96 or 10 form is being referenced
@@ -528,3 +538,7 @@ labelHcris <- function(path_, form='10', table_type, table) {
   #------------------------------------------------------------------------#
       
 }
+
+
+
+
